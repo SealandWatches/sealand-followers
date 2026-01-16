@@ -28,6 +28,7 @@ jobs:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
           YT_CHANNEL_ID: ${{ secrets.YT_CHANNEL_ID }}
           IG_USERNAME: ${{ secrets.IG_USERNAME }}
+          FB_PAGE: ${{ secrets.FB_PAGE }}
         run: python scripts/update_followers.py
 
       - name: Commit & push if changed
