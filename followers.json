@@ -1,5 +1,9 @@
 {
-  "youtube": 1,
-  "instagram": 43,
-  "facebook": 0
+  "youtube": 0,
+  "instagram": 0,
+  "updated_at_utc": "2026-01-16T12:00:00+00:00",
+  "source": {
+    "youtube": "YouTube Data API v3",
+    "instagram": "manual (IG_FOLLOWERS secret)"
+  }
 }
