@@ -1,7 +1,7 @@
 import json
 import os
-import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -10,168 +10,64 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTFILE = ROOT / "followers.json"
 
 
-def get_env(name: str) -> str:
+def get_env(name: str, required: bool = False) -> str:
     v = os.getenv(name, "").strip()
-    if not v:
+    if required and not v:
         print(f"Missing env var: {name}", file=sys.stderr)
         sys.exit(1)
     return v
 
 
-def safe_read_existing() -> dict:
-    if OUTFILE.exists():
-        try:
-            return json.loads(OUTFILE.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-    return {}
+def to_int(value: str, default: int = 0) -> int:
+    try:
+        return int(str(value).strip())
+    except Exception:
+        return default
 
 
-def write_json(payload: dict) -> None:
-    OUTFILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print("Wrote followers.json:", payload)
-
-
-# -------------------------
-# YouTube
-# -------------------------
-def fetch_youtube_subs(api_key: str, channel_id: str) -> int:
+def fetch_youtube_subscribers(api_key: str, channel_id: str) -> int:
     url = "https://www.googleapis.com/youtube/v3/channels"
     params = {"part": "statistics", "id": channel_id, "key": api_key}
     r = requests.get(url, params=params, timeout=20)
     r.raise_for_status()
     data = r.json()
+
     items = data.get("items", [])
     if not items:
-        raise RuntimeError(f"No channel found for id={channel_id}")
+        return 0
+
     stats = items[0].get("statistics", {})
-    return int(stats.get("subscriberCount", 0))
-
-
-# -------------------------
-# Instagram (scrape, no token)
-# -------------------------
-def parse_human_count(s: str) -> int:
-    """
-    Accepts: "1", "43", "1,234", "1.234", "12K", "12.3K", "1.2M"
-    Returns integer count.
-    """
-    s = s.strip()
-
-    m = re.match(r"^([0-9]+(?:[.,][0-9]+)?)\s*([KMB])$", s, re.IGNORECASE)
-    if m:
-        num = float(m.group(1).replace(",", "."))
-        suf = m.group(2).upper()
-        mult = {"K": 1_000, "M": 1_000_000, "B": 1_000_000_000}[suf]
-        return int(num * mult)
-
-    digits = re.sub(r"[^\d]", "", s)
-    return int(digits) if digits else 0
-
-
-def fetch_instagram_followers(username: str) -> int:
-    url = f"https://www.instagram.com/{username}/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-    }
-
-    r = requests.get(url, headers=headers, timeout=25)
-    r.raise_for_status()
-    html = r.text
-
-    m = re.search(
-        r'<meta\s+property="og:description"\s+content="([^"]+)"',
-        html,
-        re.IGNORECASE,
-    )
-    if not m:
-        raise RuntimeError("Could not find og:description (private/blocked/HTML changed)")
-
-    desc = m.group(1)
-    first = desc.split(" ", 1)[0]
-    return parse_human_count(first)
-
-# -------------------------
-# Facebook
-# -------------------------
-def fetch_facebook_followers(page: str) -> int:
-    # Gebruik mobile variant: minder scripts, vaker leesbare tekst
-    if page.startswith("http"):
-        url = page.replace("www.facebook.com", "m.facebook.com")
-    else:
-        url = f"https://m.facebook.com/{page}"
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9,nl;q=0.8",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-    }
-
-    r = requests.get(url, headers=headers, timeout=25, allow_redirects=True)
-    r.raise_for_status()
-    html = r.text
-
-    # Pak og:description als die er is (meestal bevat die likes + followers/volgers)
-    m = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', html, re.IGNORECASE)
-    text = m.group(1) if m else html
-
-    # Engels + Nederlands keywords
-    patterns = [
-        r"([0-9][0-9.,KMB]*)\s+followers",           # 1,234 followers
-        r"([0-9][0-9.,KMB]*)\s+volgers",             # 1.234 volgers
-        r"([0-9][0-9.,KMB]*)\s+people\s+follow",     # 123 people follow this
-        r"([0-9][0-9.,KMB]*)\s+mensen\s+volgen",     # 123 mensen volgen dit
-    ]
-
-    for p in patterns:
-        mm = re.search(p, text, re.IGNORECASE)
-        if mm:
-            return parse_human_count(mm.group(1))
-
-    # Extra fallback: in og:description staat vaak "X likes · Y followers"
-    # Dan pakken we het LAATSTE getal dat erin zit (meestal followers/volgers)
-    nums = re.findall(r"([0-9][0-9.,KMB]*)", text)
-    if nums:
-        return parse_human_count(nums[-1])
-
-    raise RuntimeError("Could not parse Facebook followers from HTML/og:description")
+    return to_int(stats.get("subscriberCount", 0), 0)
 
 
 def main() -> None:
-    existing = safe_read_existing()
+    yt_api_key = get_env("YT_API_KEY", required=True)
+    yt_channel_id = get_env("YT_CHANNEL_ID", required=True)
 
-    yt_api_key = get_env("YT_API_KEY")
-    yt_channel_id = get_env("YT_CHANNEL_ID")
-    ig_username = get_env("IG_USERNAME")
-    fb_page = get_env("FB_PAGE")
+    # Instagram: zonder API is dit vaak instabiel.
+    # Daarom doen we dit als handmatig getal via secret IG_FOLLOWERS (kan ook leeg blijven).
+    ig_followers = to_int(get_env("IG_FOLLOWERS", required=False) or "0")
 
-    yt = fetch_youtube_subs(yt_api_key, yt_channel_id)
-
-    # Instagram
+    yt_subs = 0
     try:
-        ig = fetch_instagram_followers(ig_username)
+        yt_subs = fetch_youtube_subscribers(yt_api_key, yt_channel_id)
     except Exception as e:
-        print("Instagram fetch failed:", repr(e))
-        ig = int(existing.get("instagram", 0) or 0)
+        print(f"YouTube fetch failed: {e}", file=sys.stderr)
+        yt_subs = 0
 
-    # Facebook
-    try:
-        fb = fetch_facebook_followers(fb_page)
-    except Exception as e:
-        print("Facebook fetch failed:", repr(e))
-        fb = int(existing.get("facebook", 0) or 0)
+    payload = {
+        "youtube": yt_subs,
+        "instagram": ig_followers,
+        "updated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source": {
+            "youtube": "YouTube Data API v3",
+            "instagram": "manual (IG_FOLLOWERS secret)",
+        },
+    }
 
-    write_json({
-        "youtube": int(yt),
-        "instagram": int(ig),
-        "facebook": int(fb),
-    })
+    OUTFILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print("Wrote followers.json:", payload)
+
 
 if __name__ == "__main__":
     main()
-
