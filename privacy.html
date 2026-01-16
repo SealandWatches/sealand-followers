@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacyverklaring – Sealand Followers</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.6;margin:0;background:#0b0f14;color:#e9eef7}
+    .wrap{max-width:820px;margin:0 auto;padding:40px 20px}
+    h1{font-size:28px;margin:0 0 12px}
+    h2{font-size:18px;margin:28px 0 10px}
+    p,li{color:#cdd8ea}
+    .card{background:#121a24;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 18px}
+    a{color:#7bb3ff}
+    code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+    footer{margin-top:26px;font-size:13px;color:#93a4be}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Privacyverklaring – Sealand Followers</h1>
+    <div class="card">
+      <p>
+        Deze pagina hoort bij <strong>Sealand Followers</strong>: een klein hobbyproject dat openbare follower-aantallen
+        van sociale media toont op een lokaal display.
+      </p>
+
+      <h2>Welke gegevens verzamelen we?</h2>
+      <p><strong>Geen.</strong> Dit project verzamelt, bewaart of verkoopt geen persoonsgegevens van bezoekers.</p>
+
+      <h2>Wat doet het project dan wél?</h2>
+      <ul>
+        <li>Het leest alleen <strong>publiek beschikbare</strong> statistieken (zoals follower-aantallen) van publieke profielen.</li>
+        <li>Het schrijft periodiek een klein JSON-bestand weg: <code>followers.json</code>.</li>
+        <li>Een lokaal apparaat (ESP8266) leest dit JSON-bestand om de aantallen te tonen.</li>
+      </ul>
+
+      <h2>Cookies</h2>
+      <p>Deze pagina gebruikt geen tracking cookies.</p>
+
+      <h2>Contact</h2>
+      <p>
+        Vragen? Mail naar: <a href="mailto:info@sealandwatches.nl">info@sealandwatches.nl</a>
+      </p>
+    </div>
+
+    <footer>
+      Laatste update: <span id="d"></span>
+      <script>
+        document.getElementById("d").textContent = new Date().toLocaleDateString("nl-NL");
+      </script>
+    </footer>
+  </div>
+</body>
+</html>
