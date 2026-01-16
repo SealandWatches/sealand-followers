@@ -19,9 +19,9 @@ jobs:
         run: |
           python3 << 'EOF'
           import json
-import re
-import requests
-import datetime
+          import re
+          import requests
+          import datetime
 
           import os
           YT_API_KEY = os.environ["YT_API_KEY"]
