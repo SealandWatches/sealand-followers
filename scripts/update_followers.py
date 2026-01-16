@@ -132,7 +132,6 @@ def fetch_facebook_followers(page: str) -> int:
 
     raise RuntimeError("Could not parse Facebook followers from page HTML")
 
-
 def main() -> None:
     existing = safe_read_existing()
 
@@ -140,16 +139,17 @@ def main() -> None:
     yt_channel_id = get_env("YT_CHANNEL_ID")
     ig_username = get_env("IG_USERNAME")
     fb_page = get_env("FB_PAGE")
-    
+
     yt = fetch_youtube_subs(yt_api_key, yt_channel_id)
 
+    # Instagram
     try:
         ig = fetch_instagram_followers(ig_username)
     except Exception as e:
         print("Instagram fetch failed:", repr(e))
         ig = int(existing.get("instagram", 0) or 0)
 
-    # Facebook (scrape). If it fails, keep previous value to avoid writing nonsense.
+    # Facebook
     try:
         fb = fetch_facebook_followers(fb_page)
     except Exception as e:
@@ -159,10 +159,8 @@ def main() -> None:
     write_json({
         "youtube": int(yt),
         "instagram": int(ig),
-        "facebook": int(fb)
-})
-
-
+        "facebook": int(fb),
+    })
 
 if __name__ == "__main__":
     main()
