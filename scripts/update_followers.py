@@ -150,16 +150,16 @@ def main() -> None:
         ig = int(existing.get("instagram", 0) or 0)
 
     # Facebook (scrape). If it fails, keep previous value to avoid writing nonsense.
-try:
-    fb = fetch_facebook_followers(fb_page)
-except Exception as e:
-    print("Facebook fetch failed:", repr(e))
-    fb = int(existing.get("facebook", 0) or 0)
+    try:
+        fb = fetch_facebook_followers(fb_page)
+    except Exception as e:
+        print("Facebook fetch failed:", repr(e))
+        fb = int(existing.get("facebook", 0) or 0)
 
-write_json({
-    "youtube": int(yt),
-    "instagram": int(ig),
-    "facebook": int(fb)
+    write_json({
+        "youtube": int(yt),
+        "instagram": int(ig),
+        "facebook": int(fb)
 })
 
 
