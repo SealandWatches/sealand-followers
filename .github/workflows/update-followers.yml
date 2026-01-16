@@ -22,9 +22,11 @@ jobs:
           import re
           import requests
           import datetime
-
           import os
-          YT_API_KEY = os.environ["YT_API_KEY"]
+
+          YT_API_KEY = os.getenv("YT_API_KEY", "")
+          if not YT_API_KEY:
+              raise SystemExit("Missing secret: YT_API_KEY (check repo Settings > Secrets and variables > Actions)")
 
 
           # --- YOUTUBE ---
