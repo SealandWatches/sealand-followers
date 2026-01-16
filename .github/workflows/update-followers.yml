@@ -18,7 +18,11 @@ jobs:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
         run: |
           python3 << 'EOF'
-          import json, re, requests, datetime
+          import json
+import re
+import requests
+import datetime
+
           import os
           YT_API_KEY = os.environ["YT_API_KEY"]
 
