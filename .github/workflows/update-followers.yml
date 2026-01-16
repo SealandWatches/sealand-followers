@@ -2,10 +2,10 @@ name: Update Followers
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # elke 10 minuten
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
-  permissions:
+permissions:
   contents: write
 
 jobs:
