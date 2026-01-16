@@ -31,7 +31,6 @@ jobs:
           if not YT_API_KEY:
               raise SystemExit("Missing secret: YT_API_KEY (check repo Settings > Secrets and variables > Actions)")
 
-
           # --- YOUTUBE ---
           yt_url = "https://www.googleapis.com/youtube/v3/channels"
           yt_params = {
@@ -47,23 +46,14 @@ jobs:
               "https://www.instagram.com/sealand_watches/",
               headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9"}
           )
-          print("IG status:", ig_resp.status_code)
-          print("IG first 300 chars:", ig_resp.text[:300])
           ig_html = ig_resp.text
-          
-          # --- TIKTOK ---
-          tt_resp = requests.get(
-            "https://www.tiktok.com/@sealandwatches",
-            headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9"}
-          )
-          print("TT status:", tt_resp.status_code)
-          print("TT first 300 chars:", tt_resp.text[:300])
-          tt_html = tt_resp.text
+
+          ig_match = re.search(r'([\d.,]+)\s+Followers', ig_html, re.I)
+          instagram = int(ig_match.group(1).replace('.', '').replace(',', '')) if ig_match else 0
 
           data = {
               "youtube": youtube,
               "instagram": instagram,
-              "tiktok": tiktok,
               "updatedAt": datetime.datetime.utcnow().isoformat() + "Z"
           }
 
