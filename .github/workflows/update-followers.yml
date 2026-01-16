@@ -19,6 +19,9 @@ jobs:
         run: |
           python3 << 'EOF'
           import json, re, requests, datetime
+          import os
+          YT_API_KEY = os.environ["YT_API_KEY"]
+
 
           # --- YOUTUBE ---
           yt_url = "https://www.googleapis.com/youtube/v3/channels"
