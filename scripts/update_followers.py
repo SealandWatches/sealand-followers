@@ -32,6 +32,9 @@ def write_json(payload: dict) -> None:
     OUTFILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print("Wrote followers.json:", payload)
 
+print("=== RUNNING update_followers.py ===")
+print("File:", __file__)
+print("Env keys:", sorted([k for k in os.environ.keys() if k.startswith("IG_") or k.startswith("YT_")]))
 
 # -------------------------
 # YouTube
