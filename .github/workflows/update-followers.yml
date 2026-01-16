@@ -1,0 +1,70 @@
+name: Update Followers
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # elke 10 minuten
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch followers
+        env:
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+        run: |
+          python3 << 'EOF'
+          import json, re, requests, datetime
+
+          # --- YOUTUBE ---
+          yt_url = "https://www.googleapis.com/youtube/v3/channels"
+          yt_params = {
+              "part": "statistics",
+              "id": "UCbVtsiAIvqalXK60M7r-EBw",
+              "key": YT_API_KEY
+          }
+          yt = requests.get(yt_url, params=yt_params).json()
+          youtube = int(yt["items"][0]["statistics"]["subscriberCount"])
+
+          # --- INSTAGRAM ---
+          ig_html = requests.get(
+              "https://www.instagram.com/sealand_watches/",
+              headers={"User-Agent": "Mozilla/5.0"}
+          ).text
+
+          ig_match = re.search(r'([\d.,]+)\s+Followers', ig_html, re.I)
+          instagram = int(ig_match.group(1).replace('.', '').replace(',', '')) if ig_match else 0
+
+          # --- TIKTOK ---
+          tt_html = requests.get(
+              "https://www.tiktok.com/@sealandwatches",
+              headers={"User-Agent": "Mozilla/5.0"}
+          ).text
+
+          tt_match = re.search(r'"followerCount":(\d+)', tt_html)
+          tiktok = int(tt_match.group(1)) if tt_match else 0
+
+          data = {
+              "youtube": youtube,
+              "instagram": instagram,
+              "tiktok": tiktok,
+              "updatedAt": datetime.datetime.utcnow().isoformat() + "Z"
+          }
+
+          with open("followers.json", "w") as f:
+              json.dump(data, f, indent=2)
+
+          print(data)
+          EOF
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add followers.json
+          git commit -m "Auto-update followers" || exit 0
+          git push
