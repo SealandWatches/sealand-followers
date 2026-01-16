@@ -99,15 +99,15 @@ def fetch_instagram_followers(username: str) -> int:
 # Facebook
 # -------------------------
 def fetch_facebook_followers(page: str) -> int:
-    # page = slug zoals "sealandwatches" of volledige URL
+    # Gebruik mobile variant: minder scripts, vaker leesbare tekst
     if page.startswith("http"):
-        url = page
+        url = page.replace("www.facebook.com", "m.facebook.com")
     else:
-        url = f"https://www.facebook.com/{page}"
+        url = f"https://m.facebook.com/{page}"
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9,nl;q=0.8",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
     }
@@ -116,21 +116,31 @@ def fetch_facebook_followers(page: str) -> int:
     r.raise_for_status()
     html = r.text
 
-    # Probeer eerst og:description (meest stabiel)
+    # Pak og:description als die er is (meestal bevat die likes + followers/volgers)
     m = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', html, re.IGNORECASE)
     text = m.group(1) if m else html
 
-    # Zoek iets als: "1,234 followers" of "1.234 followers"
-    m2 = re.search(r"([0-9][0-9.,KMB]*)\s+followers", text, re.IGNORECASE)
-    if m2:
-        return parse_human_count(m2.group(1))
+    # Engels + Nederlands keywords
+    patterns = [
+        r"([0-9][0-9.,KMB]*)\s+followers",           # 1,234 followers
+        r"([0-9][0-9.,KMB]*)\s+volgers",             # 1.234 volgers
+        r"([0-9][0-9.,KMB]*)\s+people\s+follow",     # 123 people follow this
+        r"([0-9][0-9.,KMB]*)\s+mensen\s+volgen",     # 123 mensen volgen dit
+    ]
 
-    # Alternatieve teksten (soms): "X people follow this"
-    m3 = re.search(r"([0-9][0-9.,KMB]*)\s+people\s+follow", text, re.IGNORECASE)
-    if m3:
-        return parse_human_count(m3.group(1))
+    for p in patterns:
+        mm = re.search(p, text, re.IGNORECASE)
+        if mm:
+            return parse_human_count(mm.group(1))
 
-    raise RuntimeError("Could not parse Facebook followers from page HTML")
+    # Extra fallback: in og:description staat vaak "X likes · Y followers"
+    # Dan pakken we het LAATSTE getal dat erin zit (meestal followers/volgers)
+    nums = re.findall(r"([0-9][0-9.,KMB]*)", text)
+    if nums:
+        return parse_human_count(nums[-1])
+
+    raise RuntimeError("Could not parse Facebook followers from HTML/og:description")
+
 
 def main() -> None:
     existing = safe_read_existing()
